@@ -45,7 +45,7 @@ class TokenEmbeddings(nn.Module):
             return self.embedding.weight + pos_tensor
 
 window = 2
-embedding_size = 50
+embedding_size = 100
 epochs = 50
 batch_size = 2048  # Adjust batch size as needed
 
@@ -93,7 +93,7 @@ for epoch in range(epochs):
 positional_encoded = model.positional_encode(device)
 torch.save(positional_encoded,'positional_encodings.pt')
 
-# #   P   L   O   T   T   I   N   G         T   H   E         E   M   B   E   D   D   I   N   G   S
+#   P   L   O   T   T   I   N   G         T   H   E         E   M   B   E   D   D   I   N   G   S
 # def get_embeddings(model):
 #     return model.embedding.weight.data.cpu().numpy()
 

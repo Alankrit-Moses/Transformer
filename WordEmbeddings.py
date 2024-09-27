@@ -33,6 +33,16 @@ class TokenEmbeddings(nn.Module):
         out = func.relu(out)
         out = self.layer3(out)
         return out
+    
+    def positional_encode(self,device):
+        with torch.no_grad():
+            num_positions = self.embedding.weight.shape[0]
+            pos_tensor = torch.zeros(num_positions, self.embedding.weight.shape[1]).to(device)
+            for i in range(num_positions):  # Iterate over each position
+                pos_tensor[i, 0::2] = torch.sin(torch.tensor(i) / (10000 ** (torch.arange(0, pos_tensor.shape[1], 2) / self.embedding.weight.shape[1])))
+                pos_tensor[i, 1::2] = torch.cos(torch.tensor(i) / (10000 ** (torch.arange(1, pos_tensor.shape[1], 2) / self.embedding.weight.shape[1])))
+
+            return self.embedding.weight + pos_tensor
 
 window = 2
 embedding_size = 50
@@ -61,6 +71,7 @@ data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 model = TokenEmbeddings(tokenizer.vocab_size, embedding_size)
 model.to(device)
+# print(model.embedding.weight.shape,tokenizer.vocab_size,embedding_size)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 criterion = nn.CrossEntropyLoss()
 
@@ -79,28 +90,31 @@ for epoch in range(epochs):
         total_loss += loss.item()
     print("Total Loss:", total_loss)
 
-#   P   L   O   T   T   I   N   G         T   H   E         E   M   B   E   D   D   I   N   G   S
-def get_embeddings(model):
-    return model.embedding.weight.data.cpu().numpy()
+positional_encoded = model.positional_encode(device)
+torch.save(positional_encoded,'positional_encodings.pt')
 
-def reduce_dimensions(embeddings):
-    tsne = TSNE(n_components=2, random_state=0)
-    reduced_embeddings = tsne.fit_transform(embeddings)
-    return reduced_embeddings
+# #   P   L   O   T   T   I   N   G         T   H   E         E   M   B   E   D   D   I   N   G   S
+# def get_embeddings(model):
+#     return model.embedding.weight.data.cpu().numpy()
 
-def plot_embeddings(reduced_embeddings, tokens):
-    plt.figure(figsize=(10, 10))
-    for i in range(len(reduced_embeddings)):
-        plt.scatter(reduced_embeddings[i, 0], reduced_embeddings[i, 1])
-        plt.annotate(tokens[i], xy=(reduced_embeddings[i, 0], reduced_embeddings[i, 1]), 
-                     textcoords='offset points', xytext=(0, 5), ha='center', fontsize=8)
-    plt.title("t-SNE of Token Embeddings")
-    plt.xlabel("Dimension 1")
-    plt.ylabel("Dimension 2")
-    plt.grid()
-    plt.show()
+# def reduce_dimensions(embeddings):
+#     tsne = TSNE(n_components=2, random_state=0)
+#     reduced_embeddings = tsne.fit_transform(embeddings)
+#     return reduced_embeddings
 
-# After training, call the functions to plot the embeddings
-embeddings = get_embeddings(model)
-reduced_embeddings = reduce_dimensions(embeddings)
-plot_embeddings(reduced_embeddings, tokens)
+# def plot_embeddings(reduced_embeddings, tokens):
+#     plt.figure(figsize=(10, 10))
+#     for i in range(len(reduced_embeddings)):
+#         plt.scatter(reduced_embeddings[i, 0], reduced_embeddings[i, 1])
+#         plt.annotate(tokens[i], xy=(reduced_embeddings[i, 0], reduced_embeddings[i, 1]), 
+#                      textcoords='offset points', xytext=(0, 5), ha='center', fontsize=8)
+#     plt.title("t-SNE of Token Embeddings")
+#     plt.xlabel("Dimension 1")
+#     plt.ylabel("Dimension 2")
+#     plt.grid()
+#     plt.show()
+
+# # After training, call the functions to plot the embeddings
+# embeddings = get_embeddings(model)
+# reduced_embeddings = reduce_dimensions(embeddings)
+# plot_embeddings(reduced_embeddings, tokens)
